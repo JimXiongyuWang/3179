@@ -1,0 +1,230 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alcohol Expenditure Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f7f7f7;
+            padding: 20px;
+        }
+
+        h1 {
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        #yearSlider {
+            width: 80%;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            font-weight: 500;
+        }
+
+        #mis, #vis {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Alcohol Expenditure Consumption(2018)</h1>
+
+    <div id="mis"></div>
+
+    <h2>Alcohol Expenditure by Year(US)</h2>
+    <input type="range" id="yearSlider" min="1935" max="2014" value="2014">
+    <div class="slider-labels">
+        <span>1935</span> - <span id="selectedYear">2014</span>
+    </div>
+    <div id="vis"></div>
+    <div>This shows the expenditure on alcohol in the United States, differentiated by where the alcohol has been purchased and consumed.</div>
+
+
+    <script type="text/javascript">
+        function updateChart(year) {
+            const spec = {
+                "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                "data": {
+                    "url": "https://raw.githubusercontent.com/Chuandie/week10/main/alcohol-expenditure.csv",
+                    "format": {
+                        "type": "csv"
+                    }
+                },
+                "width": 500,
+                "height": 300,
+                "mark": "area",
+                "encoding": {
+                    "x": {
+                        "field": "Year",
+                        "type": "temporal",
+                        "axis": {
+                            "format": "%Y"
+                        }
+                    },
+                    "y": {
+                        "field": "amount",
+                        "type": "quantitative",
+                        "axis": {
+                            "title": "Expenditure"
+                        },
+                        "stack": "normalize"
+                    },
+                    "color": {
+                        "field": "category",
+                        "type": "nominal",
+                        "scale": {
+                            "scheme": "category10"
+                        },
+                        "legend": {
+                            "title": "Alcohol Expenditure Category"
+                        }
+                    }
+                },
+                "transform": [
+                    {
+                        "fold": ["Other (at home) (USDA, 2018)", "Food stores (at home) (USDA, 2018)", "Liquor stores (at home) (USDA, 2018)", "All other (away from home) (USDA, 2018)", "Hotels & motels (away from home) (USDA, 2018)", "Restaurants & bars (away from home) (USDA, 2018)"],
+                        "as": ["category", "amount"]
+                    },
+                    {
+                        "filter": `year(datum.Year) <= ${year}`
+                    }
+                ],
+                "title": `Alcohol Expenditure in the United States by Category (1935-${year})`
+            };
+
+            vegaEmbed('#vis', spec);
+        }
+
+        document.getElementById('yearSlider').addEventListener('input', function (e) {
+            document.getElementById('selectedYear').textContent = e.target.value;
+            updateChart(e.target.value);
+        });
+
+        updateChart(document.getElementById('yearSlider').value);
+    </script>
+
+    <script>
+        const spec = {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            //  < !--定义这个可视化规范使用的 Vega-Lite 的版本-- >
+
+            "title": "Total Alcohol Consumption Per Capita (Litres of Pure Alcohol)",
+            //  < !--定义图表的标题 -->
+
+            "width": 1400,
+            "height": 700,
+            //   < !--定义图表的尺寸 -->
+
+            "data": {
+                "url": "https://raw.githubusercontent.com/FIT3179/Vega-Lite/main/3_choropleth_map/js/ne_110m_admin_0_countries.topojson",
+                "format": { "type": "topojson", "feature": "ne_110m_admin_0_countries" }
+            },
+            // < !--定义主要数据源，并说明这是一个 TopoJSON 格式的地理数据，这个数据描述了国家的地理边界-- >
+
+            "projection": { "type": "equalEarth" },
+            //   < !--定义地图的投影方式为 "equalEarth" -- >
+
+            "layer": [
+                //  < !--使用多个图层来组合不同的图形元素 -->
+
+                {
+                    //   < !--第一个图层用于显示没有数据的国家 -->
+
+                    "transform": [
+                        //      < !--使用转换来计算提示信息 -->
+                        {
+                            "calculate": "'Data is not available in ' + datum.properties.NAME",
+                            "as": "note"
+                        }
+                    ],
+                    "mark": { "type": "geoshape", "fill": "lightgray", "stroke": "white" },
+                    //     < !--使用 geoshape 图形，并定义填充和描边颜色-- >
+
+                    "encoding": { "tooltip": { "field": "note", "type": "nominal" } }
+                    //   < !--定义鼠标悬停时显示的提示信息 -->
+                },
+                {
+                    //       < !--第二个图层用于显示海洋 -->
+
+                    "data": {
+                        "url": "https://raw.githubusercontent.com/FIT3179/Vega-Lite/main/7_others/oceans.topojson",
+                        "format": { "type": "topojson", "feature": "oceans" }
+                    },
+                    "mark": { "type": "geoshape", "fill": "skyblue" }
+                    //    < !--使用 geoshape 图形，并定义填充颜色为 skyblue-- >
+                },
+                {
+                    //             < !--第三个图层用于显示经纬度网格 -->
+
+                    "data": {
+                        "url": "https://raw.githubusercontent.com/FIT3179/Vega-Lite/main/2_symbol_map/js/WorldMapWithGraticules.topojson",
+                        "format": { "type": "topojson", "feature": "ne_110m_graticules_30" }
+                    },
+                    "mark": { "type": "geoshape", "fill": null, "stroke": "lightgray" }
+                    //      < !--使用 geoshape 图形，只定义描边颜色-- >
+                },
+                {
+                    //            < !--第四个图层用于显示每个国家的酒精消费量 -->
+
+                    "transform": [
+                        {
+                            //                < !--使用查找转换将国家名称关联到酒精消费数据 -->
+
+                            "lookup": "properties.NAME",
+                            "from": {
+                                "data": {
+                                    "url": "https://raw.githubusercontent.com/Chuandie/Week9-homework/main/data/total-alcohol-consumption-per-capita-litres-of-pure-alcohol%20(2).csv"
+                                },
+                                "key": "Entity",
+                                "fields": ["Year", "Alcohol consumption"]
+                            }
+                        }
+                    ],
+                    "mark": { "type": "geoshape", "stroke": "white" },
+                    //         < !--使用 geoshape 图形，并定义描边颜色-- >
+
+                    "encoding": {
+                        //              < !--定义颜色编码和提示信息 -->
+
+                        "color": {
+                            "field": "Alcohol consumption",
+                            "type": "quantitative",
+                            "title": "Litres of Pure Alcohol"
+                        },
+                        "tooltip": [
+                            { "field": "properties.NAME", "type": "nominal", "title": "Country" },
+                            { "field": "Year", "type": "ordinal" },
+                            { "field": "Alcohol consumption", "type": "quantitative", "title": "Alcohol Consumption (Litres)" }
+                        ]
+                    }
+                }
+            ],
+            "config": {}
+            //       < !--定义图表的全局配置 -->
+        };
+        vegaEmbed("#mis", spec, { mode: "vega-lite" }).then(console.log).catch(console.warn);
+              //      < !--使用 vegaEmbed 函数将定义的可视化规范嵌入到前面定义的 div 容器中，并在完成后打印日志或警告-- >
+    </script>
+
+</body>
+</html>
